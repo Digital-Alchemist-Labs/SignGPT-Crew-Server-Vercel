@@ -4,5 +4,8 @@
       "runtime": "python3.11",
       "includeFiles": "{crew.py,config/**,data/**}"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/app.py" }
+  ]
 }
