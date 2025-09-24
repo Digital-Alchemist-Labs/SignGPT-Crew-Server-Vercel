@@ -4,8 +4,5 @@
       "runtime": "python3.11",
       "includeFiles": "{crew.py,config/**,data/**}"
     }
-  },
-  "routes": [
-    { "src": "/(.*)", "dest": "api/app.py" }
-  ]
+  }
 }
