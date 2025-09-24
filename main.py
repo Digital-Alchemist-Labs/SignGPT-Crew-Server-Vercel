@@ -1,4 +1,4 @@
-from crew import SginGPTCrew
+from api.crew import SginGPTCrew
 import os
 import json
 from dotenv import load_dotenv

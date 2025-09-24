@@ -1,49 +1,44 @@
-# ==== path setup (safe for Vercel serverless) ====
-import os, sys, json
+# --- app.py 상단: 안전한 경로 설정 ---
 from pathlib import Path
-
-API_DIR = Path(__file__).resolve().parent          # .../api
-ROOT_DIR = API_DIR.parent                          # 프로젝트 루트
-
-# 상위 폴더(프로젝트 루트)를 sys.path에 추가 (중복 방지)
-if str(ROOT_DIR) not in sys.path:
-    sys.path.append(str(ROOT_DIR))
-
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+import json, os
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from dotenv import load_dotenv
 
-from crew import SginGPTCrew  # 루트의 crew.py (vercel.json includeFiles 필요)
+# api/ 디렉터리
+API_DIR = Path(__file__).resolve().parent
+DATA_PATH = API_DIR / "data" / "english_words.json"
 
-# env 로드
+# .env (로컬용)
 load_dotenv()
 
+# ==== 여기 추가: FastAPI 앱 생성 ====
 app = FastAPI(
     title="SignGPT Crew Server",
     description="API server for processing ASL tokens using AI agents",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-# CORS 그대로 유지...
+# (선택) CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # 프로덕션에서는 도메인 지정 권장
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ==== data path: __file__ 기반 절대경로 ====
-DATA_PATH = ROOT_DIR / "data" / "english_words.json"
-
+# 데이터 로드
 try:
     with DATA_PATH.open("r", encoding="utf-8") as f:
         asl_dataset_raw = json.load(f)
-    asl_dataset = [asl_dataset_raw[word].upper() for word in asl_dataset_raw]
+    asl_dataset = [asl_dataset_raw[w].upper() for w in asl_dataset_raw]
 except FileNotFoundError as exc:
     raise RuntimeError(f"ASL dataset file not found at {DATA_PATH}") from exc
+
+from crew import SginGPTCrew  # 같은 폴더
 
 # Pydantic models for request/response
 
