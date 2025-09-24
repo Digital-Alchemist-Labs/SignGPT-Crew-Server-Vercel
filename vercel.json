@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "api/*.py": {
+      "runtime": "python3.11",
+      "includeFiles": [
+        "crew.py",
+        "tools.py",
+        "config/**",
+        "data/**"
+      ]
+    }
+  },
+  "routes": [
+    { "src": "/(.*)", "dest": "/api/app.py" }
+  ]
+}

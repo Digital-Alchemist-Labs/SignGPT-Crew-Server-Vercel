@@ -1,17 +1,23 @@
-import os, sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# ==== path setup (safe for Vercel serverless) ====
+import os, sys, json
+from pathlib import Path
 
+API_DIR = Path(__file__).resolve().parent          # .../api
+ROOT_DIR = API_DIR.parent                          # 프로젝트 루트
+
+# 상위 폴더(프로젝트 루트)를 sys.path에 추가 (중복 방지)
+if str(ROOT_DIR) not in sys.path:
+    sys.path.append(str(ROOT_DIR))
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
-import json
-import os
-from dotenv import load_dotenv
 
-from crew import SginGPTCrew
+from crew import SginGPTCrew  # 루트의 crew.py (vercel.json includeFiles 필요)
 
-# Load environment variables
+# env 로드
 load_dotenv()
 
 app = FastAPI(
@@ -20,23 +26,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add CORS middleware
+# CORS 그대로 유지...
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this properly for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Load ASL dataset at startup
+# ==== data path: __file__ 기반 절대경로 ====
+DATA_PATH = ROOT_DIR / "data" / "english_words.json"
+
 try:
-  with open("./data/english_words.json", "r", encoding="utf-8") as f:
-    asl_dataset_raw = json.load(f)
-  asl_dataset = [asl_dataset_raw[word].upper() for word in asl_dataset_raw]
+    with DATA_PATH.open("r", encoding="utf-8") as f:
+        asl_dataset_raw = json.load(f)
+    asl_dataset = [asl_dataset_raw[word].upper() for word in asl_dataset_raw]
 except FileNotFoundError as exc:
-  raise RuntimeError(
-      "ASL dataset file not found at ./data/english_words.json") from exc
+    raise RuntimeError(f"ASL dataset file not found at {DATA_PATH}") from exc
 
 # Pydantic models for request/response
 
