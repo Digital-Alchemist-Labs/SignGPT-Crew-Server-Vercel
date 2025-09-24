@@ -1,0 +1,101 @@
+# tasks.yaml (updated)
+
+# CONTEXT: {ASL_dataset} (a mapping of known words).
+finish_sentence_task:
+  description: >
+    INPUT: A JSON array of ASL tokens recognized by the model (WLASL style), e.g. ["TOMORROW","SCHOOL","GO","I"]. 
+
+    ACTION: Produce one fluent English sentence that best matches the tokens' meaning.
+    RULES:
+      - Respect typical ASL ordering (TIME → TOPIC → COMMENT) when interpreting intent.
+      - Infer minimal tense/aspect from TIME words (e.g., TOMORROW → future phrasing).
+      - Do NOT invent entities not present in the tokens unless required function words for English.
+      - Prefer vocabulary present in ASL_dataset; if a concept is missing, paraphrase simply.
+      - Output must be a single line string (no quotes, no JSON).
+    INPUT FORMAT:
+      - tokens: list[str]
+      - optional: user_context (short text), asl_dataset (dict or path)
+
+    USER INPUT : {words}
+
+  expected_output: >
+    A single grammatical English sentence (string), e.g., "I will go to school tomorrow."
+  agent: sentence_finisher_agent
+
+chat_task:
+  description: >
+    PURPOSE:
+      Answer the user's question directly and concisely.
+
+    INPUT: {message}
+
+    ACTION:
+      - Answer the user's question directly.
+      - If asked about your name, respond that you are SignGPT.
+      - Be helpful and conversational.
+      - Answer ONLY; do not ask a follow-up question.
+
+    RULES:
+      - Keep responses concise (1-3 sentences).
+      - Plain text only (no code blocks, no metadata, no emojis).
+      - Simple syntax; avoid idioms and complex clauses.
+      - Punctuation limited to a period or question mark.
+
+  expected_output: >
+    One-Three sentence (≤ 30 words per each sentence). Plain text only (no code blocks, no metadata, no emojis).
+
+  agent: chat_model_agent
+
+sentence_split_task:
+  description: >
+    You are an English-to-ASL converter. Convert the input English sentence to a single ASL token sequence using ONLY the provided ASL_dataset vocabulary.
+
+    ASL_dataset: {ASL_dataset} (available tokens).
+
+    RULES (apply sequentially):
+
+    1. TOKENIZE: Split into words, remove punctuation, uppercase
+    2. MAP VOCABULARY: 
+      - Use exact ASL_dataset match if exists
+      - Map common synonyms:
+        * help/aid/assist → HELP
+        * question/ask → QUESTION  
+        * student/pupil → STUDENT
+        * teacher/instructor → TEACHER
+      - Remove: a, an, the, is, am, are, was, were, will, do, does, have, has
+      - Keep: I, YOU, ME, MY, YOUR, WE, THEY
+      - Omit unmappable words
+    3. REORDER:
+      - Time words first: TODAY, TOMORROW, YESTERDAY, NOW
+      - For statements: SUBJECT + OBJECT + VERB
+      - For WH-questions: SUBJECT + OBJECT + WH-WORD
+
+    EXAMPLES:
+    "I help students" → ["I", "STUDENT", "HELP"]
+    "What is your name?" → ["YOUR", "NAME", "WHAT"] 
+    "Tomorrow I go school" → ["TOMORROW", "I", "SCHOOL", "GO"]
+
+  expected_output: >
+    Either (a) an array of arrays, one token array per sentence, in original sentence order;
+    or (b) a single flat array if flat_mode=true, with a clear separator ("period" or "SENTENCE_BREAK").
+    In all cases, A–Z single-letter tokens are preserved; only ASL_dataset words or valid letters appear.
+
+  agent: sentence_splitter_agent
+
+rearrange_word_task:
+  description: >
+    INPUT: An unordered or English-order list of tokens (e.g., ["I","GO","STORE","YESTERDAY"]).
+    ASL_dataset: {ASL_dataset} (available tokens).
+    ACTION: Re-order tokens to ASL grammar:
+      - TIME first; then TOPIC; then COMMENT (verb phrase + optional pronoun).
+      - Drop function words not in ASL_dataset (articles; some prepositions).
+      - **Do NOT drop single-character A–Z alphabet tokens (e.g., G, P, T).**
+      - For negatives, place NOT before or after the verb (COFFEE LIKE NOT I).
+      - For questions, move WH to edge; yes/no remains linear (non-manual signals not represented).
+
+    OUTPUT FORMAT:
+      - A JSON array of tokens in ASL order, preserving single-character alphabet tokens.
+
+  expected_output: >
+    A JSON array reordered to ASL grammar (e.g., ["YESTERDAY","STORE","GO","I"]) and preserving alphabet tokens like ["NAME","SIGN","G","P","T"].
+  agent: sentence_splitter_agent
