@@ -5,11 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "crewai>=0.152.0",        # ← [tools] 제거
+    "crewai[tools]>=0.152.0",
     "fastapi>=0.116.2",
     "uvicorn>=0.32.0",
+    "playwright>=1.55.0",
     "python-dotenv>=1.1.1",
     "pydantic>=2.0.0",
-    "pyyaml",                 # crew.py에서 yaml 로드
-    "openai"                  # 에이전트가 OpenAI 쓰면 명시
 ]
