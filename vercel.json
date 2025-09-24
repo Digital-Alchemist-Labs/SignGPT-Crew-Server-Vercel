@@ -2,7 +2,7 @@
   "functions": {
     "api/*.py": {
       "runtime": "python3.11",
-      "includeFiles": "{crew.py,config/**,data/**,tools.py}"
+      "includeFiles": "{crew.py,config/**,data/**}"
     }
   },
   "routes": [
