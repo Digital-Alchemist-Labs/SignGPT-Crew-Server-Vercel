@@ -38,7 +38,7 @@ try:
 except FileNotFoundError as exc:
     raise RuntimeError(f"ASL dataset file not found at {DATA_PATH}") from exc
 
-from crew import SginGPTCrew  # 같은 폴더
+from .crew import SginGPTCrew  # 같은 폴더
 
 # Pydantic models for request/response
 
